@@ -99,7 +99,7 @@ public class GlobalVariableStringParameterDefinition extends StringParameterDefi
     public ParameterValue createValue(StaplerRequest req, JSONObject jo) {
         String trueValueBLEA = req.getRequestURIWithQueryString();
 
-        trueValueBLEA = trueValueBLEA.split("/")[2];
+        trueValueBLEA = trueValueBLEA.split("/")[2].replace(" ", "_");
 
         jo.put("value", trueValueBLEA);
         return (StringParameterValue) req.bindJSON(StringParameterValue.class,
