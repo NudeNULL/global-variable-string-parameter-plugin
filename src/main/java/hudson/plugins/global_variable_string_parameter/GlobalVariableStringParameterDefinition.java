@@ -30,10 +30,20 @@ import hudson.model.StringParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.util.FormValidation;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.lang.*;
+import java.util.Properties;
+
 import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.util.Scanner;
 
 import javax.servlet.ServletException;
 
@@ -47,11 +57,10 @@ import org.kohsuke.stapler.StaplerRequest;
  * String based parameter that supports substituting global variables.
  *
  * @author Patrick McKeown
- * @since 1.0
  * @see {@link StringParameterDefinition}
+ * @since 1.0
  */
 public class GlobalVariableStringParameterDefinition extends StringParameterDefinition {
-
     /**
      *
      */
@@ -59,22 +68,40 @@ public class GlobalVariableStringParameterDefinition extends StringParameterDefi
     // search for variables of the form ${VARNAME} or $NoWhiteSpace
     private static final Pattern pattern = Pattern.compile("\\$\\{(.+)\\}|\\$(.+)\\s?");
 
+
     @DataBoundConstructor
-    public GlobalVariableStringParameterDefinition(String name,
-            String defaultValue, String description) {
+    public GlobalVariableStringParameterDefinition(String name, String defaultValue, String description) {
+
         super(name, defaultValue, description);
+    }
+
+    private static void logMe(String log) {
+
+        try {
+            FileWriter myWriter = new FileWriter("/Users/glebpalchin/Desktop/filename.txt", true);
+            myWriter.write(log + "\n");
+            myWriter.close();
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
     }
 
     @Override
     public ParameterValue createValue(String value) {
-        return new StringParameterValue(super.getName(),
+        StringParameterValue st = new StringParameterValue(super.getName(),
                 replaceGlobalVars(value), super.getDescription());
+
+        return st;
     }
 
     @Override
     public ParameterValue createValue(StaplerRequest req, JSONObject jo) {
-        // Replace any global variables inside the json
-        jo.put("value", replaceGlobalVars(jo.getString("value")));
+        String trueValueBLEA = req.getRequestURIWithQueryString();
+
+        trueValueBLEA = trueValueBLEA.split("/")[2];
+
+        jo.put("value", trueValueBLEA);
         return (StringParameterValue) req.bindJSON(StringParameterValue.class,
                 jo);
     }
@@ -95,23 +122,32 @@ public class GlobalVariableStringParameterDefinition extends StringParameterDefi
         }
 
         public FormValidation doCheckGlobalName(@QueryParameter String value) throws IOException, ServletException {
-            if (!value.contains("$") || globalVarExists(value)) {
-                return FormValidation.ok();
-            } else {
-                return FormValidation.error("Global Variable " + value.replaceAll("\\$|\\{|\\}", "") + " does not exist");
-            }
+            return FormValidation.ok();
         }
 
         public AutoCompletionCandidates doAutoCompleteGlobalName(@QueryParameter String value) {
             AutoCompletionCandidates candidates = new AutoCompletionCandidates();
             Set<String> propNames = GlobalNodeProperties.getProperties().keySet();
             for (String name : propNames) {
+
                 // Autocomplete global variables with or without the ${} special characters
                 if (name.startsWith(value.replaceAll("\\$|\\{|\\}", "")) || name.startsWith(value)) {
                     candidates.add("${" + name + "}");
                 }
             }
+
             return candidates;
+        }
+
+        private static void logMe(String log) {
+            try {
+                FileWriter myWriter = new FileWriter("/Users/glebpalchin/Desktop/filename.txt", true);
+                myWriter.write(log + "\n");
+                myWriter.close();
+            } catch (IOException e) {
+                System.out.println("An error occurred.");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -139,6 +175,7 @@ public class GlobalVariableStringParameterDefinition extends StringParameterDefi
                 str = str.replace(m.group(0), globalValue);
             }
         }
+
         return str;
     }
 }
